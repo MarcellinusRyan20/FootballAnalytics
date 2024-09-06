@@ -1,0 +1,194 @@
+```{r  install package}
+install.packages("dplyr")
+```
+
+```{r load library}
+library(readxl)
+library(Benchmarking)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r read data}
+defenders_pam_df <- read_excel("C:/Users/marce/OneDrive/Documents/Sports Interactive/Football Manager 2023/Data 25-26/Summer Transfer 2025.xlsx", sheet = "PAM - Defending Duty")
+
+defenders_pam_df
+```
+
+```{r function for dea output oriented}
+run_dea_out <- function(inputs, outputs) {
+    dea_result <- dea(X = inputs, Y = outputs, RTS = "crs", ORIENTATION = "out")
+    return(dea_result)
+}
+```
+
+```{r function for dea input oriented}
+run_dea_in <- function(inputs, outputs) {
+    dea_result <- dea(X = inputs, Y = outputs, RTS = "crs", ORIENTATION = "in")
+    return(dea_result)
+}
+```
+
+
+```{r set inputs and outputs}
+inputs_def_df<- as.matrix(defenders_pam_df[, c("Poss Lost/90", "Salary", "Mins")])
+outputs_def_df <- as.matrix(defenders_pam_df[, c("Aer A/90", "Pr passes/90", "Press Completion Ratio/90", "Poss Won/90", "K Tck/90", "K Hdrs/90", "Dist/90", "Sprints/90", "Hdr %", "Pas %", "Tck R", "Defensive Action/90")])
+```
+
+```{r dea result output}
+dea_results_out_df <- run_dea_out(inputs_def_df, outputs_def_df)
+summary(dea_results_out_df)
+```
+
+```{r dea result input}
+dea_results_in_df <- run_dea_in(inputs_def_df, outputs_def_df)
+summary(dea_results_in_df)
+```
+
+```{r add efficiency column in df}
+efficiency_scores_out <- as.data.frame(dea_results_out_df$eff)
+efficiency_scores_in <- as.data.frame(dea_results_in_df$eff)
+
+colnames(efficiency_scores_out) <- "Efficiency Output Oriented"
+colnames(efficiency_scores_in) <- "Efficiency Input Oriented"
+
+defenders_pam_df <- cbind(defenders_pam_df, efficiency_scores_out, efficiency_scores_in)
+
+tail(defenders_pam_df)
+```
+```{r slice df for salford def}
+defenders_salford_df <- tail(defenders_pam_df, 11)
+
+print(defenders_salford_df)
+```
+
+```{r function for efficiency plot output oriented dea}
+plot_efficiency_chart <- function(df, eff_column, chart_title) {
+  df_sorted <- df[order(df[[eff_column]], decreasing = TRUE),]
+
+  plot <- ggplot(df_sorted, aes(x = reorder(Name, df[[eff_column]]), y = df[[eff_column]])) +
+    geom_bar(stat = "identity", fill = 'red') +
+    geom_text(aes(label = sprintf("%.3f", df[[eff_column]])), hjust = -0.1, size = 2.5) +  
+    labs(title = chart_title, 
+         x = "Player Name", 
+         y = eff_column) +
+    coord_flip() +  
+    theme_minimal() +  
+    theme(axis.text.y = element_text(size = 8), 
+          axis.text.x = element_text(size = 10), 
+          plot.title = element_text(size = 16))  
+}
+
+```
+
+```{r view plot output oriented dea eff for salford def}
+def_output_plot <- plot_efficiency_chart(
+  df = defenders_salford_df, 
+  eff_column = "Efficiency Output Oriented", 
+  chart_title = "Salford Defenders Output Oriented Efficiency Scores"
+)
+
+print(def_output_plot)
+```
+
+```{r view plot input oriented dea eff for salford def}
+def_input_plot <- plot_efficiency_chart(
+  df = defenders_salford_df, 
+  eff_column = "Efficiency Input Oriented", 
+  chart_title = "Salford Defenders Input Oriented Efficiency Scores"
+)
+
+print(def_input_plot)
+```
+
+```{r function for visual efficiency plot on scouted players}
+plot_filtered_efficiency_chart <- function(df, eff_column, chart_title) {
+  df_filtered <- df %>% 
+    filter(.data[[eff_column]] != 1) %>%
+    slice(1:(n() - 11))
+  df_sorted <- df_filtered[order(df_filtered[[eff_column]], decreasing = TRUE),]
+  plot <- ggplot(df_sorted, aes(x = reorder(Name, .data[[eff_column]]), y = .data[[eff_column]])) +
+    geom_bar(stat = "identity", fill = 'maroon') +
+    geom_text(aes(label = sprintf("%.3f", .data[[eff_column]])), hjust = -0.1, size = 2.5) +  
+    labs(title = chart_title, 
+         x = "Player Name", 
+         y = eff_column) +
+    coord_flip() +  
+    theme_minimal() + 
+    theme(axis.text.y = element_text(size = 8), 
+          axis.text.x = element_text(size = 10),  
+          plot.title = element_text(size = 16))  
+}
+```
+
+```{r view plot output oriented for non eff scouted def}
+scouted_def_noneff_output_plot <- plot_filtered_efficiency_chart(
+  df = defenders_pam_df, 
+  eff_column = "Efficiency Output Oriented", 
+  chart_title = "Scouted Output Oriented Non-Efficient Defenders Scores"
+)
+print(scouted_def_noneff_output_plot)
+```
+
+```{r view plot input oriented for non eff scouted def}
+scouted_def_noneff_input_plot <- plot_filtered_efficiency_chart(
+  df = defenders_pam_df, 
+  eff_column = "Efficiency Input Oriented", 
+  chart_title = "Scouted Input Oriented Non-Efficient Defenders Scores"
+)
+print(scouted_def_noneff_input_plot)
+```
+
+```{r function for slicing df to find eff scouted players}
+filter_efficiency <- function(df, eff_column, club) {
+  df_filtered <- df %>%
+    filter(df[[eff_column]] == 1, df[["Club"]] != club)
+  return(df_filtered)
+}
+```
+
+```{r find efficient output oriented scouted def}
+scouted_def_eff_output <- filter_efficiency(
+  df = defenders_pam_df, 
+  eff_column = "Efficiency Output Oriented",
+  club = "Salford"
+)
+
+print(scouted_def_eff_output)
+```
+
+```{r find efficient input oriented scouted def}
+scouted_def_eff_input <- filter_efficiency(
+  df = defenders_pam_df, 
+  eff_column = "Efficiency Input Oriented", 
+  club = "Salford"
+)
+
+print(scouted_def_eff_input)
+```
+
+```{r function for sensitivity analysis}
+sensitivity_analysis <- function(inputs, outputs, orientation) {
+  variations <- seq(0.8, 1.2, by = 0.1)
+  sensitivity_results <- list()
+  
+  for (var in variations) {
+    modified_inputs <- inputs * var
+    modified_outputs <- outputs * var
+    dea_result <- dea(X = modified_inputs, Y = modified_outputs, RTS = "crs", ORIENTATION = orientation)
+    sensitivity_results[[paste0("Variation_", var)]] <- dea_result$eff
+  }
+  
+  return(sensitivity_results)
+}
+```
+
+```{r sensitivity analysis output oriented dea}
+sensitivity_results_output_df <- sensitivity_analysis(inputs_def_df, outputs_def_df, "out")
+sensitivity_results_output_df
+```
+
+```{r sensitivity analysis for input oriented dea}
+sensitivity_results_input_df <- sensitivity_analysis(inputs_def_df, outputs_def_df, "in")
+sensitivity_results_input_df
+```
