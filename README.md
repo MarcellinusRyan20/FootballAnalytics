@@ -10,4 +10,4 @@ If the .twbx file cannot be accessed, here are the link to Tableau Public where 
 # Visualisation Screenshot
 Due to Extension Radar Version 1.0.0 isn't currently supported on Tableau Public, here is the the screenshot of the *Player Profiling* visualisation:
 
-[Visualisation 7: Player Profiling](![image](https://github.com/user-attachments/assets/7d0d6957-caab-4b08-a644-09f09d37c4db)
+[Visualisation 7: Player Profiling](Tableau Visualisation - Player Profiling.jpg)
